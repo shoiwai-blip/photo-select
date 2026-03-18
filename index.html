@@ -698,7 +698,7 @@ async function loadFolders() {
   S.folders = [];
   render();
   try {
-    const key = 'AIzaSyA27TtS8s9udeK65J5njECqAHqIeEQ0_nE';
+    const key = 'AIzaSyA27TtS8s9udeK65J5njECqAHqIeEQO_nE';
     const r1 = await fetch(`https://www.googleapis.com/drive/v3/files?q='${rootId}'+in+parents+and+mimeType='application/vnd.google-apps.folder'&orderBy=name&fields=files(id,name)&key=${key}`);
     const d1 = await r1.json();
     const subs = d1.files || [];

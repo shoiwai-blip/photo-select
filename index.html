@@ -793,10 +793,10 @@ function esc(s) {
   const client = p.get('client');
   const shoot  = p.get('shoot');
   if (folder) {
-    S.rootUrl    = folder;
-    S.gasUrl     = gas    || '';
-    S.clientName = client || '';
-    S.shootName  = shoot  || '';
+    S.rootUrl    = decodeURIComponent(folder);
+    S.gasUrl     = gas    ? decodeURIComponent(gas)    : '';
+    S.clientName = client ? decodeURIComponent(client) : '';
+    S.shootName  = shoot  ? decodeURIComponent(shoot)  : '';
     S.view = 'client';
     document.getElementById('view-toggle').style.display = 'none';
     loadFolders();

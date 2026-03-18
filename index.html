@@ -533,7 +533,7 @@ function adminSelect() {
     ? af.photos.map(p => {
         const sel = getSel(af.id, p.id);
         return `<div class="photo-card ${sel}">
-          <div class="photo-thumb" onclick="if(p.fullLink)window.open('${p.fullLink}','_blank')" style="cursor:zoom-in">
+          <div class="photo-thumb" onclick="openPhoto('${p.id}')" style="cursor:zoom-in">
             ${p.thumbnailLink
               ? `<img src="${p.thumbnailLink}" alt="${esc(p.name)}" onerror="this.parentNode.innerHTML='<span class=\\'no-img\\'>${esc(p.name)}</span>'">`
               : `<span class="no-img">${esc(p.name)}</span>`}
@@ -650,7 +650,7 @@ function renderClient(el) {
     ? af.photos.map(p => {
         const sel = getSel(af.id, p.id);
         return `<div class="photo-card ${sel}">
-          <div class="photo-thumb" onclick="window.open(`${p.fullLink||'#'}`,'_blank')" style="cursor:zoom-in">
+          <div class="photo-thumb" onclick="openPhoto('${p.id}')" style="cursor:zoom-in">
             ${p.thumbnailLink
               ? `<img src="${p.thumbnailLink}" alt="${esc(p.name)}">`
               : `<span class="no-img">${esc(p.name)}</span>`}
@@ -748,6 +748,11 @@ async function submitResults() {
   }
   S.step = 3;
   render();
+}
+
+function openPhoto(photoId) {
+  const url = `https://drive.google.com/file/d/${photoId}/view`;
+  window.open(url, '_blank');
 }
 
 function clientSubmit() {

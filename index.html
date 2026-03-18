@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>写真セレクト</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f3;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --border-mid: rgba(0,0,0,0.14);
+    --text: #1a1a18;
+    --text-2: #6b6b67;
+    --text-3: #a8a8a4;
+    --ok: #1a7a52;
+    --ok-bg: #e6f5ee;
+    --ok-border: #a3d9bc;
+    --ng: #c0392b;
+    --ng-bg: #fdecea;
+    --ng-border: #f5b0aa;
+    --chk: #b06000;
+    --chk-bg: #fef3e2;
+    --chk-border: #f5cc8a;
+    --blue: #1e5faa;
+    --blue-bg: #e8f0fb;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141412;
+      --surface: #1e1e1c;
+      --border: rgba(255,255,255,0.08);
+      --border-mid: rgba(255,255,255,0.14);
+      --text: #e8e8e4;
+      --text-2: #9a9a94;
+      --text-3: #5a5a56;
+      --ok: #4cb87e;
+      --ok-bg: #0d2e1e;
+      --ok-border: #1a5a38;
+      --ng: #e06060;
+      --ng-bg: #2e0d0d;
+      --ng-border: #5a1a1a;
+      --chk: #e0a040;
+      --chk-bg: #2e1e00;
+      --chk-border: #5a3800;
+      --blue: #6a9de8;
+      --blue-bg: #0d1e38;
+    }
+  }
+
+  html, body { height: 100%; }
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  .app { min-height: 100vh; display: flex; flex-direction: column; }
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    height: 56px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .header-shoot { font-size: 13px; color: var(--text-2); }
+  .header-spacer { flex: 1; }
+  .main { flex: 1; padding: 24px; max-width: 1080px; margin: 0 auto; width: 100%; }
+
+  /* ── View toggle ── */
+  .view-toggle {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .vbtn {
+    padding: 7px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .vbtn.active { background: var(--text); color: var(--bg); }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-title { font-size: 15px; font-weight: 600; margin-bottom: 18px; }
+
+  /* ── Form ── */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 5px; font-weight: 500; }
+  .field input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus { border-color: var(--blue); }
+  .error { font-size: 12px; color: var(--ng); margin-top: 4px; }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 9px 20px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .btn-primary { background: var(--text); color: var(--bg); }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-2);
+    border: 1px solid var(--border-mid);
+  }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  /* ── Progress ── */
+  .progress-wrap { margin-bottom: 20px; }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--ok); border-radius: 3px; transition: width 0.4s ease; }
+
+  /* ── Folder tabs ── */
+  .folder-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ftab {
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .ftab:hover { color: var(--text); }
+  .ftab.active { color: var(--text); border-bottom-color: var(--text); }
+  .ftab-count {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 20px;
+    margin-left: 6px;
+    background: var(--border);
+    color: var(--text-2);
+    font-weight: 500;
+  }
+  .ftab-count.has { background: var(--ok-bg); color: var(--ok); }
+
+  /* ── Folder summary cards ── */
+  .folder-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .fsum-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .fsum-name { font-size: 13px; font-weight: 600; margin-bottom: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fsum-stats { display: flex; gap: 10px; font-size: 12px; }
+
+  /* ── Photo grid ── */
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .photo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .photo-card.ok { border-color: var(--ok-border); border-width: 2px; }
+  .photo-card.ng { border-color: var(--ng-border); border-width: 2px; }
+  .photo-card.check { border-color: var(--chk-border); border-width: 2px; }
+  .photo-thumb {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-thumb .no-img {
+    font-size: 11px;
+    color: var(--text-3);
+    text-align: center;
+    padding: 8px;
+    line-height: 1.5;
+  }
+  .photo-name {
+    font-size: 11px;
+    color: var(--text-2);
+    padding: 8px 10px 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sel-btns { display: flex; gap: 5px; padding: 0 8px 10px; }
+  .sb {
+    flex: 1;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 0;
+    border-radius: 7px;
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-2);
+    transition: all 0.12s;
+    font-family: inherit;
+  }
+  .sb:hover { background: var(--bg); }
+  .sb.s-ok  { background: var(--ok-bg);  color: var(--ok);  border-color: var(--ok-border); }
+  .sb.s-ng  { background: var(--ng-bg);  color: var(--ng);  border-color: var(--ng-border); }
+  .sb.s-chk { background: var(--chk-bg); color: var(--chk); border-color: var(--chk-border); }
+
+  /* ── Summary bar ── */
+  .sum-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 16px 0;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  .sum-stat { font-size: 13px; color: var(--text-2); }
+  .sum-stat b { font-weight: 700; }
+
+  /* ── Code block ── */
+  .code-block {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    overflow-x: auto;
+    line-height: 1.7;
+    color: var(--text-2);
+    white-space: pre;
+    margin-top: 10px;
+  }
+  .notice {
+    font-size: 12px;
+    color: var(--text-2);
+    background: var(--blue-bg);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+  .notice b { color: var(--text); }
+
+  /* ── Success screen ── */
+  .success {
+    text-align: center;
+    padding: 3rem 1rem;
+  }
+  .success-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--ok-bg);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 24px;
+  }
+  .success h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .success p { font-size: 13px; color: var(--text-2); margin-bottom: 20px; }
+  .success-stats { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .ss-pill {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border-radius: 20px;
+  }
+
+  /* ── Misc ── */
+  .empty { font-size: 13px; color: var(--text-2); text-align: center; padding: 2rem 0; }
+  .section-gap { margin-bottom: 20px; }
+  .back-link {
+    font-size: 12px;
+    color: var(--text-2);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .back-link:hover { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <span class="header-title">写真セレクト</span>
+    <span class="header-shoot" id="hdr-shoot"></span>
+    <div class="header-spacer"></div>
+    <div class="view-toggle" id="view-toggle">
+      <button class="vbtn active" onclick="setView('admin')">管理者</button>
+      <button class="vbtn" onclick="setView('client')">クライアント</button>
+    </div>
+  </header>
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+const S = {
+  view: 'admin',
+  step: 1,
+  rootUrl: '',
+  gasUrl: '',
+  clientName: '',
+  shootName: '',
+  folders: [],
+  activeFolder: 0,
+  selections: {},
+  submitted: false,
+};
+
+// ── utils ──
+function fid(url) {
+  const m = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : url.trim();
+}
+function getSel(fid, pid) { return (S.selections[fid] || {})[pid] || ''; }
+function setSel(fid, pid, status) {
+  if (!S.selections[fid]) S.selections[fid] = {};
+  if (S.selections[fid][pid] === status) delete S.selections[fid][pid];
+  else S.selections[fid][pid] = status;
+  render();
+}
+function countSel(fid, st) { return Object.values(S.selections[fid] || {}).filter(v => v === st).length; }
+function totalSel(fid) { return Object.keys(S.selections[fid] || {}).length; }
+function allTotal() { return S.folders.reduce((a, f) => a + f.photos.length, 0); }
+function allDone()  { return S.folders.reduce((a, f) => a + totalSel(f.id), 0); }
+
+function demoFolders() {
+  const members = ['メンバーA', 'メンバーB', 'メンバーC', '集合写真'];
+  const counts  = [6, 5, 6, 4];
+  return members.map((name, i) => ({
+    id: 'demo_' + i,
+    name,
+    photos: Array.from({length: counts[i]}, (_, j) => ({
+      id: `${name}_${j+1}`,
+      name: `${name.replace('メンバー','').replace('集合写真','GROUP')}_${String(j+1).padStart(3,'0')}.jpg`,
+      thumbnailLink: ''
+    }))
+  }));
+}
+
+// ── view toggle ──
+function setView(v) {
+  S.view = v;
+  document.querySelectorAll('.vbtn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && v === 'admin') || (i === 1 && v === 'client'));
+  });
+  render();
+}
+
+// ── render router ──
+function render() {
+  const el = document.getElementById('main');
+  const hdr = document.getElementById('hdr-shoot');
+  hdr.textContent = S.shootName ? `${S.clientName}　${S.shootName}` : '';
+  if (S.view === 'admin') renderAdmin(el);
+  else renderClient(el);
+}
+
+// ── admin ──
+function renderAdmin(el) {
+  if (S.step === 1) { el.innerHTML = adminSetup(); bindSetup(); return; }
+  if (S.step === 2) { el.innerHTML = adminSelect(); return; }
+  if (S.step === 3) { el.innerHTML = adminDone(); return; }
+}
+
+function adminSetup() {
+  return `
+  <div class="card">
+    <p class="card-title">案件情報 + フォルダ設定</p>
+    <div class="notice"><b>事前準備</b>：GoogleドライブのフォルダをリンクURLで「閲覧可」に設定してください。サブフォルダ（メンバー別）を作っておくと自動でタブ分けされます。</div>
+    <div class="field"><label>クライアント名</label><input id="f-client" placeholder="例：○○プロダクション" value="${S.clientName}" oninput="S.clientName=this.value"></div>
+    <div class="field"><label>撮影・案件名</label><input id="f-shoot" placeholder="例：2024年春　ビジュアル撮影" value="${S.shootName}" oninput="S.shootName=this.value"></div>
+    <div class="field"><label>案件ルートフォルダURL</label><input id="f-folder" placeholder="https://drive.google.com/drive/folders/..." value="${S.rootUrl}" oninput="S.rootUrl=this.value"><p class="error" id="f-err"></p></div>
+    <div class="field"><label>Google Apps Script ウェブアプリURL（結果送信先）</label><input id="f-gas" placeholder="https://script.google.com/macros/s/..." value="${S.gasUrl}" oninput="S.gasUrl=this.value"></div>
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn btn-primary" onclick="loadFolders()">フォルダを読み込む</button>
+      <button class="btn btn-ghost" onclick="loadDemo()">デモで確認</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title" style="font-size:13px;">Apps Script コード（スプレッドシートに貼り付け）</p>
+    <p style="font-size:12px;color:var(--text-2);margin-bottom:4px;">拡張機能 → Apps Script → 貼り付けて保存 → デプロイ → ウェブアプリ（全員がアクセス可）</p>
+    <div class="code-block">function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ts = new Date().toLocaleString('ja-JP');
+  data.folders.forEach(function(folder) {
+    var sheet = ss.getSheetByName(folder.name)
+               || ss.insertSheet(folder.name);
+    folder.photos.forEach(function(p) {
+      sheet.appendRow([ts, data.clientName,
+        data.shootName, p.name, p.status]);
+    });
+  });
+  return ContentService
+    .createTextOutput(JSON.stringify({result:'ok'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('📸 写真管理')
+    .addItem('ドライブへ振り分け実行', 'sortPhotosBySelection')
+    .addToUi();
+}
+
+function sortPhotosBySelection() {
+  var ROOT_FOLDER_ID = 'ここにフォルダIDを入力';
+  var ui = SpreadsheetApp.getUi();
+  var r = ui.alert('振り分け開始', '選択結果をもとにファイルを移動します。よろしいですか？', ui.ButtonSet.OK_CANCEL);
+  if (r !== ui.Button.OK) return;
+  var rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var moved = 0;
+  var iter = rootFolder.getFolders();
+  while (iter.hasNext()) {
+    var sub = iter.next();
+    var sheet = ss.getSheetByName(sub.getName());
+    if (!sheet) continue;
+    var map = {};
+    sheet.getDataRange().getValues().forEach(function(r){map[r[3]]=r[4];});
+    var fi = sub.getFiles();
+    while (fi.hasNext()) {
+      var f = fi.next();
+      var st = map[f.getName()];
+      if (!st || st==='未選択') continue;
+      var dest = getOrCreate(sub, st==='ok'?'✅ 使用OK':st==='ng'?'❌ NG':'🤔 要検討');
+      f.moveTo(dest); moved++;
+    }
+  }
+  ui.alert('完了', moved + '枚を振り分けました', ui.ButtonSet.OK);
+}
+
+function getOrCreate(parent, name) {
+  var i = parent.getFoldersByName(name);
+  return i.hasNext() ? i.next() : parent.createFolder(name);
+}</div>
+  </div>`;
+}
+
+function bindSetup() {}
+
+function adminSelect() {
+  const folders = S.folders;
+  const af = folders[S.activeFolder] || folders[0];
+  const total = allTotal(), done = allDone();
+  const pct = total > 0 ? Math.round(done/total*100) : 0;
+
+  const fsumHTML = folders.map(f => {
+    const ok = countSel(f.id,'ok'), ng = countSel(f.id,'ng'), chk = countSel(f.id,'check');
+    return `<div class="fsum-card">
+      <p class="fsum-name">${esc(f.name)}</p>
+      <div class="fsum-stats">
+        <span style="color:var(--ok)">OK ${ok}</span>
+        <span style="color:var(--ng)">NG ${ng}</span>
+        <span style="color:var(--chk)">検 ${chk}</span>
+        <span style="color:var(--text-3)">${f.photos.length-ok-ng-chk}未</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const tabsHTML = folders.map((f, i) => {
+    const sel = totalSel(f.id);
+    return `<button class="ftab ${S.activeFolder===i?'active':''}" onclick="S.activeFolder=${i};render()">
+      ${esc(f.name)}<span class="ftab-count ${sel>0?'has':''}">${sel}/${f.photos.length}</span>
+    </button>`;
+  }).join('');
+
+  const gridHTML = af && af.photos.length > 0
+    ? af.photos.map(p => {
+        const sel = getSel(af.id, p.id);
+        return `<div class="photo-card ${sel}">
+          <div class="photo-thumb">
+            ${p.thumbnailLink
+              ? `<img src="${p.thumbnailLink}" alt="${esc(p.name)}" onerror="this.parentNode.innerHTML='<span class=\\'no-img\\'>${esc(p.name)}</span>'">`
+              : `<span class="no-img">${esc(p.name)}</span>`}
+          </div>
+          <p class="photo-name" title="${esc(p.name)}">${esc(p.name)}</p>
+          <div class="sel-btns">
+            <button class="sb ${sel==='ok'?'s-ok':''}"  onclick="setSel('${af.id}','${p.id}','ok')">✓ OK</button>
+            <button class="sb ${sel==='ng'?'s-ng':''}"  onclick="setSel('${af.id}','${p.id}','ng')">✕ NG</button>
+            <button class="sb ${sel==='check'?'s-chk':''}" onclick="setSel('${af.id}','${p.id}','check')">? 検討</button>
+          </div>
+        </div>`;
+      }).join('')
+    : '<p class="empty">写真が見つかりません</p>';
+
+  const af2 = af || {id:'', photos:[]};
+  const ok2 = countSel(af2.id,'ok'), ng2 = countSel(af2.id,'ng'), chk2 = countSel(af2.id,'check');
+
+  return `
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;">
+    <p style="font-size:15px;font-weight:700;">${esc(S.shootName||'撮影')}</p>
+    <p style="font-size:13px;color:var(--text-2);">${esc(S.clientName)}</p>
+    <button class="back-link" style="margin-left:auto;" onclick="S.step=1;render()">← 設定に戻る</button>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-meta"><span>全体の進捗</span><span>${done} / ${total} (${pct}%)</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  </div>
+
+  <div class="folder-summary">${fsumHTML}</div>
+  <div class="folder-tabs">${tabsHTML}</div>
+  <div class="photo-grid">${gridHTML}</div>
+
+  <div class="sum-bar">
+    <div class="sum-stat"><b style="color:var(--ok)">${ok2}</b> OK</div>
+    <div class="sum-stat"><b style="color:var(--ng)">${ng2}</b> NG</div>
+    <div class="sum-stat"><b style="color:var(--chk)">${chk2}</b> 検討</div>
+    <div class="sum-stat" style="margin-right:auto;color:var(--text-3)">${af2.photos.length-ok2-ng2-chk2} 未選択</div>
+    <button class="btn btn-primary" onclick="submitResults()" ${done===0?'disabled':''}>スプレッドシートに送信</button>
+  </div>`;
+}
+
+function adminDone() {
+  const stats = S.folders.map(f => {
+    const ok = countSel(f.id,'ok'), ng = countSel(f.id,'ng'), chk = countSel(f.id,'check');
+    return `<div class="fsum-card">
+      <p class="fsum-name">${esc(f.name)}</p>
+      <div class="fsum-stats">
+        <span style="color:var(--ok)">OK ${ok}</span>
+        <span style="color:var(--ng)">NG ${ng}</span>
+        <span style="color:var(--chk)">検 ${chk}</span>
+      </div>
+    </div>`;
+  }).join('');
+  return `
+  <div class="success">
+    <div class="success-icon">✓</div>
+    <h2>送信完了</h2>
+    <p>スプレッドシートに記録されました</p>
+  </div>
+  <div class="folder-summary">${stats}</div>
+  <div style="text-align:center;margin-top:16px;">
+    <button class="btn btn-ghost" onclick="S.step=2;render()">← 選択画面に戻る</button>
+  </div>`;
+}
+
+// ── client ──
+function renderClient(el) {
+  const folders = S.folders.length > 0 ? S.folders : demoFolders();
+  const af = folders[Math.min(S.activeFolder, folders.length-1)];
+  const total = folders.reduce((a,f)=>a+f.photos.length,0);
+  const done  = folders.reduce((a,f)=>a+totalSel(f.id),0);
+  const pct   = total > 0 ? Math.round(done/total*100) : 0;
+
+  if (S.submitted) {
+    const stats = folders.map(f => {
+      const ok = countSel(f.id,'ok'), ng = countSel(f.id,'ng'), chk = countSel(f.id,'check');
+      return `<div class="fsum-card">
+        <p class="fsum-name">${esc(f.name)}</p>
+        <div class="fsum-stats">
+          <span style="color:var(--ok)">OK ${ok}</span>
+          <span style="color:var(--ng)">NG ${ng}</span>
+          <span style="color:var(--chk)">検討 ${chk}</span>
+        </div>
+      </div>`;
+    }).join('');
+    el.innerHTML = `
+    <div class="success">
+      <div class="success-icon">✓</div>
+      <h2>ありがとうございました！</h2>
+      <p>選択内容を送信しました。</p>
+    </div>
+    <div class="folder-summary">${stats}</div>`;
+    return;
+  }
+
+  const tabsHTML = folders.map((f, i) => {
+    const sel = totalSel(f.id);
+    return `<button class="ftab ${S.activeFolder===i?'active':''}" onclick="S.activeFolder=${i};render()">
+      ${esc(f.name)}<span class="ftab-count ${sel>0?'has':''}">${sel}/${f.photos.length}</span>
+    </button>`;
+  }).join('');
+
+  const gridHTML = af && af.photos.length > 0
+    ? af.photos.map(p => {
+        const sel = getSel(af.id, p.id);
+        return `<div class="photo-card ${sel}">
+          <div class="photo-thumb">
+            ${p.thumbnailLink
+              ? `<img src="${p.thumbnailLink}" alt="${esc(p.name)}">`
+              : `<span class="no-img">${esc(p.name)}</span>`}
+          </div>
+          <p class="photo-name">${esc(p.name)}</p>
+          <div class="sel-btns">
+            <button class="sb ${sel==='ok'?'s-ok':''}"  onclick="setSel('${af.id}','${p.id}','ok')">✓ 使用OK</button>
+            <button class="sb ${sel==='ng'?'s-ng':''}"  onclick="setSel('${af.id}','${p.id}','ng')">✕ NG</button>
+            <button class="sb ${sel==='check'?'s-chk':''}" onclick="setSel('${af.id}','${p.id}','check')">? 検討</button>
+          </div>
+        </div>`;
+      }).join('')
+    : '<p class="empty">写真が見つかりません</p>';
+
+  const ok2 = countSel(af.id,'ok'), ng2 = countSel(af.id,'ng'), chk2 = countSel(af.id,'check');
+
+  el.innerHTML = `
+  <div style="margin-bottom:18px;">
+    <p style="font-size:17px;font-weight:700;">${esc(S.shootName||'撮影データ　使用可否ご確認')}</p>
+    <p style="font-size:13px;color:var(--text-2);margin-top:3px;">各写真について使用可否をお選びいただき、最後に「送信する」を押してください。</p>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-meta"><span>選択の進捗</span><span>${done} / ${total}</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  </div>
+
+  <div class="folder-tabs">${tabsHTML}</div>
+  <div class="photo-grid">${gridHTML}</div>
+
+  <div class="sum-bar">
+    <div class="sum-stat"><b style="color:var(--ok)">${ok2}</b> 使用OK</div>
+    <div class="sum-stat"><b style="color:var(--ng)">${ng2}</b> NG</div>
+    <div class="sum-stat"><b style="color:var(--chk)">${chk2}</b> 要検討</div>
+    <div class="sum-stat" style="margin-right:auto;color:var(--text-3)">${af.photos.length-ok2-ng2-chk2} 未選択</div>
+    <button class="btn btn-primary" onclick="clientSubmit()" ${done===0?'disabled':''}>送信する</button>
+  </div>`;
+}
+
+// ── actions ──
+async function loadFolders() {
+  const rootId = fid(S.rootUrl);
+  if (!rootId) { document.getElementById('f-err').textContent = 'URLを入力してください'; return; }
+  S.step = 2;
+  S.folders = [];
+  render();
+  try {
+    const key = 'AIzaSyD-REPLACE_WITH_YOUR_API_KEY';
+    const r1 = await fetch(`https://www.googleapis.com/drive/v3/files?q='${rootId}'+in+parents+and+mimeType='application/vnd.google-apps.folder'&orderBy=name&fields=files(id,name)&key=${key}`);
+    const d1 = await r1.json();
+    const subs = d1.files || [];
+    if (subs.length === 0) {
+      const r2 = await fetch(`https://www.googleapis.com/drive/v3/files?q='${rootId}'+in+parents+and+mimeType+contains+'image/'&fields=files(id,name,thumbnailLink)&key=${key}`);
+      const d2 = await r2.json();
+      S.folders = [{ id: rootId, name: S.shootName || 'すべての写真', photos: d2.files || [] }];
+    } else {
+      S.folders = await Promise.all(subs.map(async sub => {
+        const r = await fetch(`https://www.googleapis.com/drive/v3/files?q='${sub.id}'+in+parents+and+mimeType+contains+'image/'&fields=files(id,name,thumbnailLink)&key=${key}`);
+        const d = await r.json();
+        return { id: sub.id, name: sub.name, photos: d.files || [] };
+      }));
+    }
+  } catch(e) {
+    S.folders = demoFolders();
+  }
+  S.activeFolder = 0;
+  render();
+}
+
+function loadDemo() {
+  S.folders = demoFolders();
+  S.clientName = S.clientName || 'サンプルプロダクション';
+  S.shootName  = S.shootName  || '2024年春　ビジュアル撮影';
+  S.step = 2;
+  S.activeFolder = 0;
+  render();
+}
+
+async function submitResults() {
+  const payload = {
+    clientName: S.clientName,
+    shootName: S.shootName,
+    folders: S.folders.map(f => ({
+      name: f.name,
+      photos: f.photos.map(p => ({ name: p.name, status: getSel(f.id, p.id) || '未選択' }))
+    }))
+  };
+  if (S.gasUrl) {
+    try { await fetch(S.gasUrl, { method:'POST', body: JSON.stringify(payload) }); } catch(e) {}
+  }
+  S.step = 3;
+  render();
+}
+
+function clientSubmit() {
+  S.submitted = true;
+  if (S.gasUrl) {
+    const payload = {
+      clientName: S.clientName,
+      shootName: S.shootName,
+      folders: S.folders.map(f => ({
+        name: f.name,
+        photos: f.photos.map(p => ({ name: p.name, status: getSel(f.id, p.id) || '未選択' }))
+      }))
+    };
+    fetch(S.gasUrl, { method:'POST', body: JSON.stringify(payload) }).catch(()=>{});
+  }
+  render();
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+render();
+</script>
+</body>
+</html>

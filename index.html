@@ -533,7 +533,7 @@ function adminSelect() {
     ? af.photos.map(p => {
         const sel = getSel(af.id, p.id);
         return `<div class="photo-card ${sel}">
-          <div class="photo-thumb">
+          <div class="photo-thumb" onclick="if(p.fullLink)window.open('${p.fullLink}','_blank')" style="cursor:zoom-in">
             ${p.thumbnailLink
               ? `<img src="${p.thumbnailLink}" alt="${esc(p.name)}" onerror="this.parentNode.innerHTML='<span class=\\'no-img\\'>${esc(p.name)}</span>'">`
               : `<span class="no-img">${esc(p.name)}</span>`}
@@ -650,7 +650,7 @@ function renderClient(el) {
     ? af.photos.map(p => {
         const sel = getSel(af.id, p.id);
         return `<div class="photo-card ${sel}">
-          <div class="photo-thumb">
+          <div class="photo-thumb" onclick="window.open(`${p.fullLink||'#'}`,'_blank')" style="cursor:zoom-in">
             ${p.thumbnailLink
               ? `<img src="${p.thumbnailLink}" alt="${esc(p.name)}">`
               : `<span class="no-img">${esc(p.name)}</span>`}
@@ -702,15 +702,20 @@ async function loadFolders() {
     const r1 = await fetch(`https://www.googleapis.com/drive/v3/files?q='${rootId}'+in+parents+and+mimeType='application/vnd.google-apps.folder'&orderBy=name&fields=files(id,name)&key=${key}`);
     const d1 = await r1.json();
     const subs = d1.files || [];
+    const fixThumb = files => (files||[]).map(f => ({
+      ...f,
+      thumbnailLink: f.thumbnailLink ? f.thumbnailLink.replace(/=s\d+$/, '=s1200') : '',
+      fullLink: `https://drive.google.com/uc?id=${f.id}&export=view`
+    }));
     if (subs.length === 0) {
       const r2 = await fetch(`https://www.googleapis.com/drive/v3/files?q='${rootId}'+in+parents+and+mimeType+contains+'image/'&fields=files(id,name,thumbnailLink)&key=${key}`);
       const d2 = await r2.json();
-      S.folders = [{ id: rootId, name: S.shootName || 'すべての写真', photos: d2.files || [] }];
+      S.folders = [{ id: rootId, name: S.shootName || 'すべての写真', photos: fixThumb(d2.files) }];
     } else {
       S.folders = await Promise.all(subs.map(async sub => {
         const r = await fetch(`https://www.googleapis.com/drive/v3/files?q='${sub.id}'+in+parents+and+mimeType+contains+'image/'&fields=files(id,name,thumbnailLink)&key=${key}`);
         const d = await r.json();
-        return { id: sub.id, name: sub.name, photos: d.files || [] };
+        return { id: sub.id, name: sub.name, photos: fixThumb(d.files) };
       }));
     }
   } catch(e) {

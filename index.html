@@ -766,8 +766,8 @@ function genClientUrl() {
   const p = new URLSearchParams();
   p.set("folder", S.rootUrl);
   if (S.gasUrl)     p.set("gas",    S.gasUrl);
-  if (S.clientName) p.set("client", encodeURIComponent(S.clientName));
-  if (S.shootName)  p.set("shoot",  encodeURIComponent(S.shootName));
+  if (S.clientName) p.set("client", S.clientName);
+  if (S.shootName)  p.set("shoot",  S.shootName);
   return base + "?" + p.toString();
 }
 
@@ -795,8 +795,8 @@ function esc(s) {
   if (folder) {
     S.rootUrl    = folder;
     S.gasUrl     = gas    || '';
-    S.clientName = client ? decodeURIComponent(client) : '';
-    S.shootName  = shoot  ? decodeURIComponent(shoot)  : '';
+    S.clientName = client || '';
+    S.shootName  = shoot  || '';
     S.view = 'client';
     document.getElementById('view-toggle').style.display = 'none';
     loadFolders();

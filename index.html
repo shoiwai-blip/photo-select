@@ -558,6 +558,15 @@ function adminSelect() {
     <button class="back-link" style="margin-left:auto;" onclick="S.step=1;render()">← 設定に戻る</button>
   </div>
 
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:18px;">
+    <p style="font-size:12px;color:var(--text-2);margin-bottom:7px;font-weight:500;">クライアント共有URL</p>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input id="client-url-box" type="text" value="${genClientUrl()}" readonly style="flex:1;font-size:11px;background:var(--bg);">
+      <button class="btn btn-primary" onclick="copyClientUrl()" style="font-size:12px;padding:7px 14px;white-space:nowrap;">コピー</button>
+    </div>
+    <p style="font-size:11px;color:var(--text-3);margin-top:5px;">このURLをクライアントに送るだけ。開いた瞬間に写真が表示されます。</p>
+  </div>
+
   <div class="progress-wrap">
     <div class="progress-meta"><span>全体の進捗</span><span>${done} / ${total} (${pct}%)</span></div>
     <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -689,7 +698,7 @@ async function loadFolders() {
   S.folders = [];
   render();
   try {
-    const key = 'AIzaSyA27TtS8s9udeK65J5njECqAHqIeEQO_nE';
+    const key = 'AIzaSyD-REPLACE_WITH_YOUR_API_KEY';
     const r1 = await fetch(`https://www.googleapis.com/drive/v3/files?q='${rootId}'+in+parents+and+mimeType='application/vnd.google-apps.folder'&orderBy=name&fields=files(id,name)&key=${key}`);
     const d1 = await r1.json();
     const subs = d1.files || [];
@@ -752,11 +761,49 @@ function clientSubmit() {
   render();
 }
 
+function genClientUrl() {
+  const base = location.origin + location.pathname;
+  const p = new URLSearchParams();
+  p.set("folder", S.rootUrl);
+  if (S.gasUrl)     p.set("gas",    S.gasUrl);
+  if (S.clientName) p.set("client", encodeURIComponent(S.clientName));
+  if (S.shootName)  p.set("shoot",  encodeURIComponent(S.shootName));
+  return base + "?" + p.toString();
+}
+
+function copyClientUrl() {
+  const url = genClientUrl();
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector('#client-url-box').nextElementSibling;
+    const orig = btn.textContent;
+    btn.textContent = "コピーしました！";
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-render();
+// ── URLパラメーター自動読み込み ──
+(function() {
+  const p = new URLSearchParams(location.search);
+  const folder = p.get('folder');
+  const gas    = p.get('gas');
+  const client = p.get('client');
+  const shoot  = p.get('shoot');
+  if (folder) {
+    S.rootUrl    = folder;
+    S.gasUrl     = gas    || '';
+    S.clientName = client ? decodeURIComponent(client) : '';
+    S.shootName  = shoot  ? decodeURIComponent(shoot)  : '';
+    S.view = 'client';
+    document.getElementById('view-toggle').style.display = 'none';
+    loadFolders();
+    return;
+  }
+  render();
+})();
 </script>
 </body>
 </html>
